@@ -1008,10 +1008,15 @@
             const receiptsTotal = receipts.reduce((sum, r) => sum + r.amount, 0);
             const grandTotal = allowanceTotal + receiptsTotal;
 
+            // Datum vystavení - 3 dny po příjezdu
+            const arrivalDate = new Date(endDate);
+            const issueDate = new Date(arrivalDate);
+            issueDate.setDate(issueDate.getDate() + 3);
+
             // Aktualizujeme všechna pole
             document.getElementById('printEmployeeName').textContent = document.getElementById('employeeName').value || 'Bc. Zdeněk Šiška';
-            document.getElementById('printResidence').textContent = document.getElementById('residence').value || 'Sokolovská 397, 33441 Dobřany';
-            document.getElementById('printEmployer').textContent = document.getElementById('employer').value || 'DMDsoft s.r.o.';
+            document.getElementById('printResidence').textContent = document.getElementById('residence').value || 'Havlíčkova 1383, 334 41 Dobřany';
+            document.getElementById('printEmployer').textContent = document.getElementById('employer').value || 'DMDsoft s.r.o., Havlíčkova 1383, 334 41 Dobřany';
             document.getElementById('printDestination').textContent = document.getElementById('destination').value || 'Žilina, Považská Bystrica - SK';
             document.getElementById('printDateRange').textContent = formatDateRange(startDate, endDate);
             document.getElementById('returnDate').textContent = formatDate(endDate);
@@ -1020,6 +1025,7 @@
             document.getElementById('totalEUR').textContent = `${grandTotal.toFixed(2)} EUR`;
             document.getElementById('finalClaim').textContent = `${grandTotal.toFixed(2)} EUR`;
             document.getElementById('finalPayment').textContent = `${grandTotal.toFixed(2)} EUR`;
+            document.getElementById('signatureDate').textContent = formatDate(issueDate.toISOString().split('T')[0]);
             
             updateReceiptsInForm();
         }
