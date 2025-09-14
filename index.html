@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vyúčtování pracovní cesty v zahraničí</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            font-size: 12px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        /* Kalkulačka - pro vstup dat */
+        .calculator {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+            padding: 30px;
+        }
+
+        .calculator h1 {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .form-group textarea {
+            height: 60px;
+            resize: vertical;
+        }
+
+        .btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+            transition: background 0.3s;
+        }
+
+        .btn:hover {
+            background: #2980b9;
+        }
+
+        .btn-print {
+            background: #e74c3c;
+        }
+
+        .btn-print:hover {
+            background: #c0392b;
+        }
+
+        .btn-save {
+            background: #f39c12;
+        }
+
+        .btn-save:hover {
+            background: #e67e22;
+        }
+
+        .btn-pdf {
+            background: #9b59b6;
+        }
+
+        .btn-pdf:hover {
+            background: #8e44ad;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .button-row {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        /* Sekce dokladů */
+        .receipts-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .receipts-section h3 {
+            margin-bottom: 15px;
+            color: white;
+        }
+
+        .receipt-item {
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .receipt-info {
+            flex-grow: 1;
+        }
+
+        .receipt-amount {
+            font-weight: bold;
+            color: #27ae60;
+            margin-left: 15px;
+        }
+
+        .add-receipt-form {
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+
+        .add-receipt-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 100px;
+            gap: 10px;
+            align-items: end;
+            margin-bottom: 10px;
+        }
+
+        /* Formulář - pro tisk */
+        .form-document {
+            padding: 20px;
+            display: none;
+            background: white;
+        }
+
+        .form-document.show {
+            display: block;
+        }
+
+        .form-header {
+            background: #4CAF50;
+            color: white;
+            text-align: center;
+            padding: 15px;
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+
+        .form-section {
+            border: 2px solid #4CAF50;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .form-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 5px 0;
+            border-bottom: 1px dotted #ddd;
+        }
+
+        .form-line:last-child {
+            border-bottom: none;
+        }
+
+        .form-line strong {
+            margin-right: 10px;
+        }
+
+        .underline {
+            border-bottom: 1px solid #000;
+            min-width: 200px;
+            display: inline-block;
+            text-align: center;
+            padding: 2px 5px;
+        }
+
+        .checkbox {
+            margin: 0 10px;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+
+        .table th, .table td {
+            border: 1px solid #000;
+            padding: 8px;
+            text-align: center;
+            font-size: 11px;
+        }
+
+        .table th {
+            background: #f0f0f0;
+            font-weight: bold;
+        }
+
+        .signature-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin-top: 30px;
+            font-size: 10px;
+        }
+
+        .signature-box {
+            text-align: center;
+            border-top: 1px solid #000;
+            padding-top: 5px;
+            margin-top: 40px;
+        }
+
+        .receipt-summary {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+
+        .receipt-summary h4 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        .receipt-line {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            padding: 5px 0;
+            border-bottom: 1px dotted #ddd;
+        }
+
+        .receipt-line:last-child {
+            border-bottom: none;
+            font-weight: bold;
+            border-top: 1px solid #ddd;
+            margin-top: 5px;
+            padding-top: 10px;
+        }
+
+        /* Tiskové styly */
+        @media print {
+            body {
+                background: white !important;
+                padding: 0 !important;
+                font-size: 11px !important;
+            }
+
+            .calculator {
+                display: none !important;
+            }
+
+            .saved-trips {
+                display: none !important;
+            }
+
+            .form-document {
+                display: block !important;
+                padding: 10px !important;
+            }
+
+            .container {
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                max-width: none !important;
+            }
+
+            .btn {
+                display: none !important;
+            }
+
+            .form-section {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+
+            .table {
+                break-inside: auto;
+            }
+
+            .signature-section {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .signature-section {
+                grid-template-columns: 1fr;
+            }
+
+            .add-receipt-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .saved-trips {
+            background: #f8f9fa;
+            padding: 20px;
+            border-top: 2px solid #2ecc71;
+        }
+
+        .saved-trip {
+            background: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .saved-trip:hover {
+            background: #e8f5e8;
+        }
+
+        .trip-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .trip-details {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Kalkulačka pro vstup dat -->
+        <div class="calculator" id="calculator">
+            <h1>🧮 Kalkulačka cestovního formuláře</h1>
+            
+            <form id="travelForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Jméno zaměstnance:</label>
+                        <input type="text" id="employeeName" placeholder="Bc. Zdeněk Šiška">
+                    </div>
+                    <div class="form-group">
+                        <label>Bydliště:</label>
+                        <input type="text" id="residence" placeholder="Sokolovská 397, 33441 Dobřany">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Zaměstnavatel:</label>
+                        <input type="text" id="employer" placeholder="DMDsoft s.r.o.">
+                    </div>
+                    <div class="form-group">
+                        <label>IČ zaměstnavatele:</label>
+                        <input type="text" id="employerIC" placeholder="03393356">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Cesta do:</label>
+                        <input type="text" id="destination" placeholder="Žilina, Považská Bystrica - SK">
+                    </div>
+                    <div class="form-group">
+                        <label>Účel cesty:</label>
+                        <input type="text" id="purpose" placeholder="Pracovní jednání">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Datum začátku cesty:</label>
+                        <input type="date" id="startDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Datum konce cesty:</label>
+                        <input type="date" id="endDate" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Čas odjezdu:</label>
+                        <input type="time" id="departureTime" value="04:00">
+                    </div>
+                    <div class="form-group">
+                        <label>Čas příjezdu:</label>
+                        <input type="time" id="arrivalTime" value="23:15">
+                    </div>
+                </div>
+
+                <!-- Sekce dokladů -->
+                <div class="receipts-section">
+                    <h3>📄 Doklady o výdajích</h3>
+                    
+                    <div class="add-receipt-form">
+                        <div class="add-receipt-row">
+                            <div>
+                                <label>Popis výdaje:</label>
+                                <input type="text" id="receiptDescription" placeholder="např. Ubytování Hotel Zlatý Býk">
+                            </div>
+                            <div>
+                                <label>Částka (EUR):</label>
+                                <input type="number" id="receiptAmount" step="0.01" placeholder="0.00">
+                            </div>
+                            <div>
+                                <label>Typ:</label>
+                                <select id="receiptType">
+                                    <option value="ubytování">Ubytování</option>
+                                    <option value="tankování">Tankování</option>
+                                    <option value="parkovné">Parkovné</option>
+                                    <option value="mýto">Mýto</option>
+                                    <option value="ostatní">Ostatní výdaje</option>
+                                </select>
+                            </div>
+                            <div>
+                                <button type="button" class="btn btn-small" onclick="addReceipt()">➕ Přidat</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="receiptsList"></div>
+
+                    <div class="receipt-summary" id="receiptsSummary" style="display:none;">
+                        <h4>📊 Shrnutí výdajů</h4>
+                        <div id="receiptsBreakdown"></div>
+                    </div>
+                </div>
+
+                <div class="button-row">
+                    <button type="button" class="btn" onclick="calculateAndShowForm()">📋 Vytvořit formulář</button>
+                    <button type="button" class="btn btn-print" onclick="printForm()" id="printBtn" style="display:none">🖨️ Vytisknout</button>
+                    <button type="button" class="btn btn-pdf" onclick="exportToPDF()" id="pdfBtn" style="display:none">📄 Uložit PDF</button>
+                    <button type="button" class="btn btn-save" onclick="saveTrip()" id="saveBtn" style="display:none">💾 Uložit cestu</button>
+                    <button type="button" class="btn" onclick="clearForm()">🗑️ Vymazat</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Uložené cesty -->
+        <div class="saved-trips" id="savedTrips" style="display:none">
+            <h3>💾 Uložené cesty</h3>
+            <div id="savedTripsList"></div>
+        </div>
+
+        <!-- Formulář pro tisk -->
+        <div class="form-document" id="formDocument">
+            <div class="form-header">
+                VYÚČTOVÁNÍ PRACOVNÍ CESTY V ZAHRANIČÍ
+            </div>
+
+            <div class="form-section">
+                <div class="form-line">
+                    <span><strong>Jméno zaměstnance:</strong> <span class="underline" id="printEmployeeName"></span></span>
+                </div>
+                <div class="form-line">
+                    <span><strong>Bydliště:</strong> <span class="underline" id="printResidence"></span></span>
+                </div>
+                <div class="form-line">
+                    <span><strong>Zaměstnavatel:</strong> <span class="underline" id="printEmployer"></span></span>
+                </div>
+                <div class="form-line">
+                    <span><strong>Cesta do:</strong> <span class="underline" id="printDestination"></span> <strong>vykonána ve dnech:</strong> <span class="underline" id="printDateRange"></span></span>
+                </div>
+                <div class="form-line">
+                    <span><strong>Určený dopravní prostředek:</strong> <span class="underline">AUS</span></span>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-line">
+                    <span><strong>Výše přidělů devizových prostředků podle připojených dokladů banky:</strong></span>
+                </div>
+                <div class="form-line">
+                    <span>v šecích: .......... v hotovosti: <span class="underline">0,00</span></span>
+                </div>
+                <div class="form-line">
+                    <span><strong>Celkem:</strong> .......... <strong>Kurs:</strong> ..........</span>
+                </div>
+                <div class="form-line">
+                    <span><strong>Výše denního stravného:</strong> <span class="underline">35,00 EUR</span> <strong>Výše kapesného:</strong> <span class="underline">14,00 EUR</span></span>
+                </div>
+                <div class="form-line">
+                    <span><strong>Celodenní bezplatné stravování poskytováno ve dnech:</strong> <span class="underline" id="printMealDates"></span></span>
+                </div>
+                <div class="form-line">
+                    <span><strong>Částečné bezplatné stravování poskytováno:</strong> ano ☐ ne ☒</span>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-line">
+                    <strong>Devizový nárok:</strong>
+                </div>
+                
+                <table class="table" id="dailyAllowanceTable">
+                    <thead>
+                        <tr>
+                            <th>a) odlet/příjezd ze zahraničí</th>
+                            <th>Hodina</th>
+                            <th>tj.</th>
+                            <th>% stravné/kapesné</th>
+                            <th>nárok</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dailyAllowanceBody">
+                    </tbody>
+                </table>
+
+                <div class="form-line">
+                    <span><strong>Počátek a ukončení prac. výkonu:</strong></span>
+                </div>
+                <div class="form-line">
+                    <span><strong>Přílet (příjezd ze zahraničí):</strong></span>
+                </div>
+                
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Dne</th>
+                            <th>Hodina</th>
+                            <th>tj.</th>
+                            <th>% stravné/kapesné</th>
+                            <th>nárok</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td id="returnDate"></td>
+                            <td id="returnTime"></td>
+                            <td id="returnHours">40,0</td>
+                            <td>% stravné/kapesné</td>
+                            <td id="totalAllowance"></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="form-line">
+                    <span><strong>b) výdaje na ubytování:</strong> <span id="accommodationReceipts">doklad č. .........................</span></span>
+                </div>
+                <div class="form-line">
+                    <span><strong>c) nutné vedlejší výdaje:</strong> <span id="otherReceipts">doklad č. .........................</span></span>
+                </div>
+                <div class="form-line" id="additionalReceiptsLine" style="display:none;">
+                    <span><strong>Další výdaje:</strong> <span id="additionalReceipts"></span></span>
+                </div>
+                <div class="form-line">
+                    <span><strong>úhrnem nárok:</strong> <span class="underline" id="totalEUR"></span></span>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-line">
+                    <strong>Zjištění rozdílu mezi přidělenými a vynaloženlmi prostředky:</strong>
+                </div>
+                <div class="form-line">
+                    <span>Příjem: .........................</span>
+                </div>
+                <div class="form-line">
+                    <span>Nárok: <span class="underline" id="finalClaim"></span></span>
+                </div>
+                <div class="form-line">
+                    <span>Vráceno: .........................</span>
+                </div>
+                <div class="form-line">
+                    <span>Doplatek: <span class="underline" id="finalPayment"></span></span>
+                </div>
+                <div class="form-line">
+                    <span><strong>Rozdíl (dosažená devizová úspora, příp. přečerpání):</strong></span>
+                </div>
+                <div class="form-line">
+                    <span>Vráceno bance prostřednictvím zahraniční banky: .........................</span>
+                </div>
+                <div class="form-line">
+                    <span>Vráceno bance prostřednictvím zaměstnavatele: .........................</span>
+                </div>
+                <div class="form-line">
+                    <span>doklad č. ......................... doklad č. .........................</span>
+                </div>
+                <div class="form-line">
+                    <span>vráceno celkem: .........................</span>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-line">
+                    <span>Nepoužité letenky, jízdenky, lodní lístky a vouchery (příp. nedočerpané vouchery) byly vráceny dne: .........................</span>
+                </div>
+                <div class="form-line">
+                    <span>Prohlašuji, že moje údaje jsou správné a úplné. Pokud se v dokladech o ubytování vyskytují sazby včetně stravování (Full board, plná pense), je tato skutečnost na dokladech uvedena.</span>
+                </div>
+            </div>
+
+            <div class="signature-section">
+                <div>
+                    <div class="signature-box">Dne</div>
+                    <div style="text-align: center; margin-top: 10px;" id="signatureDate"></div>
+                </div>
+                <div>
+                    <div class="signature-box">Podpis zaměstnance</div>
+                </div>
+                <div>
+                    <div class="signature-box">Podpis zaměstnance, který upravil vyúčtování</div>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 20px; font-size: 10px;">
+                <strong>Datum a podpis odpovědného pracovníka</strong>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px; font-size: 8px; color: #666;">
+                Vytvořeno v programu FORM studio - www.kastnersw.cz
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const EUR_TO_CZK = 25.20;
+        let savedTrips = JSON.parse(localStorage.getItem('savedTrips') || '[]');
+        let receipts = [];
+
+        function addReceipt() {
+            const description = document.getElementById('receiptDescription').value;
+            const amount = parseFloat(document.getElementById('receiptAmount').value);
+            const type = document.getElementById('receiptType').value;
+
+            if (!description || !amount || amount <= 0) {
+                alert('Prosím vyplňte popis a platnou částku.');
+                return;
+            }
+
+            const receipt = {
+                id: Date.now(),
+                description: description,
+                amount: amount,
+                type: type
+            };
+
+            receipts.push(receipt);
+            updateReceiptsList();
+            updateReceiptsSummary();
+
+            // Vymazání formuláře
+            document.getElementById('receiptDescription').value = '';
+            document.getElementById('receiptAmount').value = '';
+        }
+
+        function removeReceipt(receiptId) {
+            receipts = receipts.filter(r => r.id !== receiptId);
+            updateReceiptsList();
+            updateReceiptsSummary();
+        }
+
+        function updateReceiptsList() {
+            const container = document.getElementById('receiptsList');
+            container.innerHTML = '';
+
+            receipts.forEach(receipt => {
+                const item = document.createElement('div');
+                item.className = 'receipt-item';
+                item.innerHTML = `
+                    <div class="receipt-info">
+                        <strong>${receipt.description}</strong><br>
+                        <small>Typ: ${receipt.type}</small>
+                    </div>
+                    <div class="receipt-amount">${receipt.amount.toFixed(2)} EUR</div>
+                    <button class="btn btn-small btn-danger" onclick="removeReceipt(${receipt.id})">🗑️</button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function updateReceiptsSummary() {
+            const summary = document.getElementById('receiptsSummary');
+            const breakdown = document.getElementById('receiptsBreakdown');
+
+            if (receipts.length === 0) {
+                summary.style.display = 'none';
+                return;
+            }
+
+            summary.style.display = 'block';
+
+            // Seskupení podle typu
+            const grouped = receipts.reduce((acc, receipt) => {
+                if (!acc[receipt.type]) acc[receipt.type] = 0;
+                acc[receipt.type] += receipt.amount;
+                return acc;
+            }, {});
+
+            const total = receipts.reduce((sum, r) => sum + r.amount, 0);
+
+            let html = '';
+            Object.entries(grouped).forEach(([type, amount]) => {
+                html += `<div class="receipt-line"><span>${type}:</span><span>${amount.toFixed(2)} EUR</span></div>`;
+            });
+            html += `<div class="receipt-line"><span>Celkem výdaje:</span><span>${total.toFixed(2)} EUR</span></div>`;
+
+            breakdown.innerHTML = html;
+        }
+
+        function calculateDays(startDate, endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            const diffTime = Math.abs(end - start);
+            return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        }
+
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString('cs-CZ');
+        }
+
+        function formatDateRange(startDate, endDate) {
+            return `${formatDate(startDate)} - ${formatDate(endDate)}`;
+        }
+
+        function calculateAndShowForm() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            if (!startDate || !endDate) {
+                alert('Prosím vyplňte datum začátku a konce cesty.');
+                return;
+            }
+
+            if (new Date(startDate) > new Date(endDate)) {
+                alert('Datum začátku nemůže být později než datum konce.');
+                return;
+            }
+
+            const days = calculateDays(startDate, endDate);
+            
+            // Výpočet částek
+            const stravne = 35.00;
+            const kapesne = 14.00;
+            const celkemDen = 49.00;
+            const allowanceTotal = days * celkemDen;
+            const receiptsTotal = receipts.reduce((sum, r) => sum + r.amount, 0);
+            const grandTotal = allowanceTotal + receiptsTotal;
+
+            // Vyplnění základních údajů
+            document.getElementById('printEmployeeName').textContent = document.getElementById('employeeName').value || 'Bc. Zdeněk Šiška';
+            document.getElementById('printResidence').textContent = document.getElementById('residence').value || 'Sokolovská 397, 33441 Dobřany';
+            document.getElementById('printEmployer').textContent = document.getElementById('employer').value || 'DMDsoft s.r.o.';
+            document.getElementById('printDestination').textContent = document.getElementById('destination').value || 'Žilina, Považská Bystrica - SK';
+            document.getElementById('printDateRange').textContent = formatDateRange(startDate, endDate);
+            document.getElementById('printMealDates').textContent = formatDateRange(startDate, endDate);
+
+            // Vyplnění tabulky denních příspěvků
+            const tableBody = document.getElementById('dailyAllowanceBody');
+            tableBody.innerHTML = '';
+
+            let currentDate = new Date(startDate);
+            const endDateObj = new Date(endDate);
+
+            while (currentDate <= endDateObj) {
+                const row = tableBody.insertRow();
+                row.innerHTML = `
+                    <td>od ${formatDate(currentDate.toISOString().split('T')[0])} do</td>
+                    <td></td>
+                    <td>á</td>
+                    <td>${stravne.toFixed(2)} str/kap</td>
+                    <td>${celkemDen.toFixed(2)}</td>
+                `;
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+
+            // Vyplnění dokladů
+            updateReceiptsInForm();
+
+            // Vyplnění závěrečných údajů
+            document.getElementById('returnDate').textContent = formatDate(endDate);
+            document.getElementById('returnTime').textContent = document.getElementById('arrivalTime').value || '23:15';
+            document.getElementById('totalAllowance').textContent = `${allowanceTotal.toFixed(2)}`;
+            document.getElementById('totalEUR').textContent = `${grandTotal.toFixed(2)} EUR`;
+            document.getElementById('finalClaim').textContent = `${grandTotal.toFixed(2)} EUR`;
+            document.getElementById('finalPayment').textContent = `${grandTotal.toFixed(2)} EUR`;
+            document.getElementById('signatureDate').textContent = formatDate(new Date().toISOString().split('T')[0]);
+
+            // Zobrazení formuláře a tlačítek
+            document.getElementById('formDocument').classList.add('show');
+            document.getElementById('printBtn').style.display = 'inline-block';
+            document.getElementById('pdfBtn').style.display = 'inline-block';
+            document.getElementById('saveBtn').style.display = 'inline-block';
+
+            // Přesun na formulář
+            document.getElementById('formDocument').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function updateReceiptsInForm() {
+            const accommodationReceipts = receipts.filter(r => r.type === 'ubytování');
+            const otherReceipts = receipts.filter(r => r.type !== 'ubytování');
+
+            // Ubytování
+            const accommodationElement = document.getElementById('accommodationReceipts');
+            if (accommodationReceipts.length > 0) {
+                const accommodationText = accommodationReceipts.map((r, index) => 
+                    `doklad č. ${index + 1} (${r.description} - ${r.amount.toFixed(2)} EUR)`
+                ).join(', ');
+                accommodationElement.textContent = accommodationText;
+            } else {
+                accommodationElement.textContent = 'doklad č. .........................';
+            }
+
+            // Ostatní výdaje
+            const otherElement = document.getElementById('otherReceipts');
+            if (otherReceipts.length > 0) {
+                const otherText = otherReceipts.map((r, index) => 
+                    `doklad č. ${accommodationReceipts.length + index + 1} (${r.description} - ${r.amount.toFixed(2)} EUR)`
+                ).join(', ');
+                otherElement.textContent = otherText;
+            } else {
+                otherElement.textContent = 'doklad č. .........................';
+            }
+
+            // Zobrazení dodatečné řádky pokud je více dokladů
+            const additionalLine = document.getElementById('additionalReceiptsLine');
+            const additionalElement = document.getElementById('additionalReceipts');
+            
+            if (receipts.length > 4) {
+                const additionalReceipts = receipts.slice(4);
+                const additionalText = additionalReceipts.map((r, index) => 
+                    `doklad č. ${5 + index} (${r.description} - ${r.amount.toFixed(2)} EUR)`
+                ).join(', ');
+                additionalElement.textContent = additionalText;
+                additionalLine.style.display = 'block';
+            } else {
+                additionalLine.style.display = 'none';
+            }
+        }
+
+        function printForm() {
+            // Ujistíme se, že je formulář viditelný pro tisk
+            const formDocument = document.getElementById('formDocument');
+            const calculator = document.getElementById('calculator');
+            const savedTrips = document.getElementById('savedTrips');
+            
+            // Dočasně skryjeme ostatní sekce
+            calculator.style.display = 'none';
+            savedTrips.style.display = 'none';
+            formDocument.style.display = 'block';
+            
+            // Tisk
+            window.print();
+            
+            // Vrátíme původní zobrazení
+            setTimeout(() => {
+                calculator.style.display = 'block';
+                if (savedTrips.children.length > 1) {
+                    savedTrips.style.display = 'block';
+                }
+            }, 100);
+        }
+
+        async function exportToPDF() {
+            const { jsPDF } = window.jspdf;
+            
+            if (!jsPDF) {
+                alert('PDF knihovna se nenačetla. Zkuste to prosím znovu.');
+                return;
+            }
+
+            try {
+                // Zobrazíme loading zprávu
+                const originalContent = document.getElementById('formDocument').innerHTML;
+                document.getElementById('formDocument').innerHTML = '<div class="loading">📄 Generuję PDF...</div>';
+
+                // Krátké zpoždění pro zobrazení loading zprávy
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                // Vrátíme původní obsah
+                document.getElementById('formDocument').innerHTML = originalContent;
+
+                // Aktualizujeme formulář
+                const startDate = document.getElementById('startDate').value;
+                const endDate = document.getElementById('endDate').value;
+                
+                if (startDate && endDate) {
+                    // Znovu vyplníme formulář s aktuálními daty
+                    updateFormForPDF();
+                }
+
+                // Vytvoříme canvas z formuláře
+                const formElement = document.getElementById('formDocument');
+                const canvas = await html2canvas(formElement, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#ffffff',
+                    width: formElement.scrollWidth,
+                    height: formElement.scrollHeight
+                });
+
+                // Vytvoříme PDF
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                
+                const imgWidth = 210; // A4 šířka v mm
+                const pageHeight = 295; // A4 výška v mm
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                let heightLeft = imgHeight;
+                let position = 0;
+
+                // Přidáme první stránku
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+
+                // Přidáme další stránky pokud je potřeba
+                while (heightLeft >= 0) {
+                    position = heightLeft - imgHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+
+                // Uložíme PDF
+                const employeeName = document.getElementById('employeeName').value || 'zamestnanec';
+                const destination = document.getElementById('destination').value || 'cesta';
+                const fileName = `vyuctovani_${employeeName.replace(/\s+/g, '_')}_${destination.replace(/\s+/g, '_')}_${formatDate(new Date().toISOString().split('T')[0]).replace(/\./g, '')}.pdf`;
+                
+                pdf.save(fileName);
+
+            } catch (error) {
+                console.error('Chyba při generování PDF:', error);
+                alert('Nepodařilo se vytvořit PDF. Zkuste to prosím znovu nebo použijte funkci tisku.');
+            }
+        }
+
+        function updateFormForPDF() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            
+            if (!startDate || !endDate) return;
+
+            const days = calculateDays(startDate, endDate);
+            const allowanceTotal = days * 49.00;
+            const receiptsTotal = receipts.reduce((sum, r) => sum + r.amount, 0);
+            const grandTotal = allowanceTotal + receiptsTotal;
+
+            // Aktualizujeme všechna pole
+            document.getElementById('printEmployeeName').textContent = document.getElementById('employeeName').value || 'Bc. Zdeněk Šiška';
+            document.getElementById('printResidence').textContent = document.getElementById('residence').value || 'Sokolovská 397, 33441 Dobřany';
+            document.getElementById('printEmployer').textContent = document.getElementById('employer').value || 'DMDsoft s.r.o.';
+            document.getElementById('printDestination').textContent = document.getElementById('destination').value || 'Žilina, Považská Bystrica - SK';
+            document.getElementById('printDateRange').textContent = formatDateRange(startDate, endDate);
+            document.getElementById('returnDate').textContent = formatDate(endDate);
+            document.getElementById('returnTime').textContent = document.getElementById('arrivalTime').value || '23:15';
+            document.getElementById('totalAllowance').textContent = `${allowanceTotal.toFixed(2)}`;
+            document.getElementById('totalEUR').textContent = `${grandTotal.toFixed(2)} EUR`;
+            document.getElementById('finalClaim').textContent = `${grandTotal.toFixed(2)} EUR`;
+            document.getElementById('finalPayment').textContent = `${grandTotal.toFixed(2)} EUR`;
+            
+            updateReceiptsInForm();
+        }
+
+        function saveTrip() {
+            const tripData = {
+                id: Date.now(),
+                employeeName: document.getElementById('employeeName').value,
+                residence: document.getElementById('residence').value,
+                employer: document.getElementById('employer').value,
+                employerIC: document.getElementById('employerIC').value,
+                destination: document.getElementById('destination').value,
+                purpose: document.getElementById('purpose').value,
+                startDate: document.getElementById('startDate').value,
+                endDate: document.getElementById('endDate').value,
+                departureTime: document.getElementById('departureTime').value,
+                arrivalTime: document.getElementById('arrivalTime').value,
+                receipts: [...receipts],
+                savedDate: new Date().toISOString()
+            };
+
+            savedTrips.push(tripData);
+            localStorage.setItem('savedTrips', JSON.stringify(savedTrips));
+            
+            alert('Cesta byla úspěšně uložena!');
+            displaySavedTrips();
+        }
+
+        function displaySavedTrips() {
+            if (savedTrips.length === 0) {
+                document.getElementById('savedTrips').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('savedTrips').style.display = 'block';
+            const listContainer = document.getElementById('savedTripsList');
+            listContainer.innerHTML = '';
+
+            savedTrips.forEach((trip, index) => {
+                const tripElement = document.createElement('div');
+                tripElement.className = 'saved-trip';
+                tripElement.onclick = () => loadTrip(trip);
+                
+                const days = calculateDays(trip.startDate, trip.endDate);
+                const allowanceTotal = days * 49.00;
+                const receiptsTotal = (trip.receipts || []).reduce((sum, r) => sum + r.amount, 0);
+                const totalAmount = allowanceTotal + receiptsTotal;
+                
+                tripElement.innerHTML = `
+                    <div class="trip-info">
+                        <div>
+                            <strong>${trip.employeeName || 'Bez jména'}</strong> - ${trip.destination || 'Nespecifikováno'}
+                        </div>
+                        <div>
+                            <strong>${totalAmount.toFixed(2)} EUR</strong>
+                            <button class="btn btn-small btn-danger" onclick="event.stopPropagation(); deleteTrip(${index})" style="margin-left: 10px;">🗑️</button>
+                        </div>
+                    </div>
+                    <div class="trip-details">
+                        ${formatDateRange(trip.startDate, trip.endDate)} (${days} dnů) | 
+                        Stravné: ${allowanceTotal.toFixed(2)} EUR, Výdaje: ${receiptsTotal.toFixed(2)} EUR | 
+                        Uloženo: ${formatDate(trip.savedDate.split('T')[0])}
+                    </div>
+                `;
+                
+                listContainer.appendChild(tripElement);
+            });
+        }
+
+        function loadTrip(trip) {
+            document.getElementById('employeeName').value = trip.employeeName || '';
+            document.getElementById('residence').value = trip.residence || '';
+            document.getElementById('employer').value = trip.employer || '';
+            document.getElementById('employerIC').value = trip.employerIC || '';
+            document.getElementById('destination').value = trip.destination || '';
+            document.getElementById('purpose').value = trip.purpose || '';
+            document.getElementById('startDate').value = trip.startDate || '';
+            document.getElementById('endDate').value = trip.endDate || '';
+            document.getElementById('departureTime').value = trip.departureTime || '04:00';
+            document.getElementById('arrivalTime').value = trip.arrivalTime || '23:15';
+            
+            // Načtení dokladů
+            receipts = trip.receipts || [];
+            updateReceiptsList();
+            updateReceiptsSummary();
+            
+            // Přesun zpět na kalkulačku
+            document.getElementById('calculator').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function deleteTrip(index) {
+            if (confirm('Opravdu chcete smazat tuto uloženou cestu?')) {
+                savedTrips.splice(index, 1);
+                localStorage.setItem('savedTrips', JSON.stringify(savedTrips));
+                displaySavedTrips();
+            }
+        }
+
+        function clearForm() {
+            document.getElementById('travelForm').reset();
+            receipts = [];
+            updateReceiptsList();
+            updateReceiptsSummary();
+            document.getElementById('formDocument').classList.remove('show');
+            document.getElementById('printBtn').style.display = 'none';
+            document.getElementById('pdfBtn').style.display = 'none';
+            document.getElementById('saveBtn').style.display = 'none';
+        }
+
+        // Inicializace při načtení stránky
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('startDate').value = today;
+            displaySavedTrips();
+
+            // Kontrola dostupnosti PDF knihoven
+            if (!window.jspdf || !window.html2canvas) {
+                console.warn('PDF knihovny nejsou k dispozici');
+            }
+        });
+
+        // Přidání event listeneru pro Enter klávesy v dokladech
+        document.getElementById('receiptAmount').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addReceipt();
+            }
+        });
+
+        document.getElementById('receiptDescription').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addReceipt();
+            }
+        });
+    </script>
+</body>
+</html>
